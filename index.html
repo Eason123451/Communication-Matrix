@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Communication Matrix Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f2ea; --card:#fffdf8; --ink:#1c1e23; --muted:#6a6e77; --rule:#e2dccf;
+    --accent:#14795a; --accent-soft:rgba(20,121,90,.12);
+    --row:#c2410c; --row-soft:rgba(194,65,12,.14); --col:#2457c5; --col-soft:rgba(36,87,197,.14);
+    --warn:#b4235a; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px;line-height:1.5}
+  body.present{font-size:18px}
+  .wrap{max-width:1220px;margin:0 auto;padding:28px 22px 60px}
+  header{border-bottom:2px solid var(--ink);padding-bottom:22px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  h1{font-family:Fraunces,serif;font-weight:700;font-size:clamp(2.2rem,5.5vw,3.8rem);line-height:1;margin:.25em 0 .15em;letter-spacing:-.02em}
+  h1 span{color:var(--accent)}
+  .sub{font-family:Fraunces,serif;font-size:1.3rem;margin:0}
+  .tag{color:var(--muted);margin:.3em 0 0}
+  .loop{display:flex;gap:6px;flex-wrap:wrap}
+  .loop span{font-family:"IBM Plex Mono",monospace;font-size:.75rem;border:1px solid var(--ink);border-radius:99px;padding:4px 10px}
+  .loop span:nth-child(odd){background:var(--ink);color:var(--paper)}
+
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start}
+  .sticky{position:sticky;top:12px}
+  @media (max-width:960px){.layout{grid-template-columns:1fr}.sticky{position:static}}
+  .card{background:var(--card);border:1px solid var(--rule);border-radius:var(--radius);padding:18px 20px 20px;margin-bottom:22px}
+  .card > h2{font-family:Fraunces,serif;font-size:1.3rem;margin:0 0 2px;font-weight:500}
+  .card > h2 .n{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--accent);margin-right:8px;vertical-align:3px}
+  .hint{color:var(--muted);font-size:.86rem;margin:2px 0 12px}
+  h3{font-size:.92rem;margin:12px 0 6px;font-weight:600}
+
+  .btns{display:flex;flex-wrap:wrap;gap:7px}
+  button{font:inherit;font-size:.84rem;border:1px solid var(--ink);background:transparent;color:var(--ink);border-radius:99px;padding:5px 12px;cursor:pointer}
+  button:hover{background:var(--ink);color:var(--paper)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.on{background:var(--ink);color:var(--paper)}
+  select,.num{font:inherit;border:1px solid var(--rule);border-radius:8px;padding:4px 8px;background:var(--paper)}
+  .num{width:70px;font-family:"IBM Plex Mono",monospace;text-align:center}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+  .switch{display:flex;gap:7px;align-items:center;font-size:.88rem;cursor:pointer}
+  input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+
+  canvas{display:block;width:100%;background:#fff;border:1px solid var(--rule);border-radius:12px;cursor:pointer;touch-action:manipulation}
+  #net{aspect-ratio:1/1;max-height:560px}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.78rem;color:var(--muted);margin-top:8px}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-2px;border:1.5px solid var(--ink)}
+  .status{font-size:.88rem;background:var(--paper);border-radius:8px;padding:8px 12px;margin-top:10px;min-height:2.3em}
+
+  /* labelled matrix */
+  .lm{display:inline-grid;gap:4px;align-items:center;position:relative;margin:4px 0}
+  .lm .h{font-family:"IBM Plex Mono",monospace;font-size:.78rem;color:var(--muted);text-align:center;font-weight:500}
+  .lm .h.rl{text-align:right;padding-right:12px}
+  .lm .h.sum{color:var(--accent);padding-left:8px}
+  .lm .cell{font-family:"IBM Plex Mono",monospace;font-size:.95rem;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid transparent;transition:background .12s}
+  .lm .cell.clk{cursor:pointer;background:var(--paper);border-color:var(--rule)}
+  .lm .cell.clk:hover{border-color:var(--ink)}
+  .lm .cell.one{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .lm .cell.diag{color:#b9b2a3}
+  .lm .cell.diag.clk{cursor:not-allowed}
+  .lm .cell.diagbox{box-shadow:inset 0 0 0 1.5px #e7c9d3}
+  .lm .cell.hr{background:var(--row-soft);border-color:var(--row);color:var(--ink)}
+  .lm .cell.hc{background:var(--col-soft);border-color:var(--col);color:var(--ink)}
+  .lm .cell.hb{background:linear-gradient(135deg,var(--row-soft) 50%,var(--col-soft) 50%);border-color:var(--ink);font-weight:600;color:var(--ink)}
+  .lm .cell.sel{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .lm .cell.zero0{color:var(--warn);font-weight:600}
+  .lm .rs{font-family:"IBM Plex Mono",monospace;color:var(--accent);font-weight:500;padding-left:8px;font-size:.92rem}
+  .lm .br{pointer-events:none;align-self:stretch}
+  .lm .br::before,.lm .br::after{content:"";position:absolute;top:-3px;bottom:-3px;width:7px;border:2px solid var(--ink)}
+  .lm .br{position:relative}
+  .lm .br::before{left:-7px;border-right:none}.lm .br::after{right:-7px;border-left:none}
+  .mname{font-family:Fraunces,serif;font-size:1.3rem;margin-right:8px}
+  .mrow{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+
+  .work{font-family:"IBM Plex Mono",monospace;font-size:.86rem;background:var(--paper);border-radius:8px;padding:10px 12px;margin-top:10px;line-height:1.7}
+  .work .r{color:var(--row);font-weight:600}.work .c{color:var(--col);font-weight:600}
+  .explain p{margin:.45em 0}
+  .explain p::before{content:"→ ";color:var(--accent);font-weight:600}
+  .try{background:var(--accent-soft);border-radius:10px;padding:10px 12px;font-size:.9rem;margin-top:10px}
+  table.rank{border-collapse:collapse;width:100%;font-size:.88rem;margin-top:6px}
+  table.rank th{font-weight:500;color:var(--muted);text-align:left;font-size:.76rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--rule);padding:6px 4px}
+  table.rank td{padding:6px 4px;border-bottom:1px solid #efe9de}
+  table.rank td.num{font-family:"IBM Plex Mono",monospace;white-space:nowrap}
+  .bar{height:8px;border-radius:4px;background:var(--accent);display:inline-block;vertical-align:middle;margin-left:8px}
+
+  .steps{display:flex;gap:6px;flex-wrap:wrap}
+  .q{border:1.5px dashed var(--accent);border-radius:12px;padding:14px;margin-top:6px}
+  .q .prompt{font-size:1rem;margin-bottom:10px}
+  .q .opts{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+  .q .opts label{display:flex;gap:8px;align-items:flex-start;font-size:.92rem;cursor:pointer}
+  .fb{margin-top:10px;font-size:.92rem}
+  .ok{color:var(--accent);font-weight:600}.bad{color:var(--warn);font-weight:600}
+  .notes{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media (max-width:800px){.notes{grid-template-columns:1fr}}
+  .notes ul{padding-left:18px;margin:6px 0}.notes li{margin:5px 0}
+  .pill{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:.72rem;background:var(--ink);color:var(--paper);border-radius:6px;padding:1px 6px;margin-right:6px}
+  details.howto{background:var(--card);border:1px solid var(--rule);border-radius:var(--radius);padding:14px 20px;margin-bottom:18px}
+  details.howto summary{cursor:pointer;font-family:Fraunces,serif;font-size:1.15rem}
+  details.howto ol{margin:10px 0 4px;padding-left:20px}details.howto li{margin:5px 0}
+  .kbd{font-family:"IBM Plex Mono",monospace;font-size:.8rem;border:1px solid var(--rule);background:var(--paper);border-radius:5px;padding:0 5px}
+  .lesson{border:2px solid var(--ink)}
+  .levels{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .levels button{min-width:38px;padding:5px 10px;font-family:"IBM Plex Mono",monospace}
+  .levels button.done{border-color:var(--accent);color:var(--accent)}
+  .levels button.done::after{content:" ✓"}
+  .levels button.cur{background:var(--ink);color:var(--paper)}
+  .levels .lbl{font-size:.78rem;color:var(--muted);margin-right:4px}
+  .lgrid{display:grid;grid-template-columns:1.1fr 1fr;gap:20px}
+  @media (max-width:860px){.lgrid{grid-template-columns:1fr}}
+  .lesson h2{font-family:Fraunces,serif;font-weight:500;font-size:1.5rem;margin:2px 0 8px}
+  .learn{font-size:.95rem}.learn p{margin:.4em 0}
+  .taskbox{background:var(--paper);border-radius:12px;padding:12px 14px}
+  .goal{display:inline-block;font-size:.8rem;border-radius:99px;padding:2px 10px;margin-left:6px;border:1px dashed #b9b2a3;color:var(--muted)}
+  .goal.met{background:var(--accent);color:#fff;border:1px solid var(--accent)}
+  .lq{margin-top:12px;border-top:1px dashed var(--rule);padding-top:10px}
+  .lq.locked{opacity:.45;pointer-events:none}
+  .lq .opts{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+  .lq .opts label{display:flex;gap:8px;font-size:.92rem;cursor:pointer}
+  .hidden{display:none!important}
+  footer{color:var(--muted);font-size:.82rem;border-top:1px solid var(--rule);padding-top:14px;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <div class="eyebrow">VCE General Mathematics · Unit 1 · Matrices · Classroom Simulation</div>
+    <h1>Communication <span>Matrix Lab</span></h1>
+    <p class="sub">Who can reach whom?</p>
+    <p class="tag">Draw a network. Read the matrix. Square it. Explain the result.</p>
+  </div>
+  <div class="loop" aria-label="Learning loop"><span>Predict</span><span>Change one link</span><span>Compare</span><span>Justify</span></div>
+</header>
+
+<details class="howto" open>
+  <summary>How to use this page</summary>
+  <ol>
+    <li>Work through <b>Levels 1–8</b> in order. Each level adds one new idea, starting with just two people.</li>
+    <li>Read the <b>Learn</b> box, then do <b>Your task</b> on the network. To draw an arrow, click a person, then click who they can message. Click the same pair again to remove it.</li>
+    <li>When the task shows <span class="goal met">✓ done</span>, answer the question and press <b>Check</b>. A correct answer unlocks the next level.</li>
+    <li>Watch the matrices on the right change as you draw. You can also click a number in <b>C</b> to switch a link on or off, and click a number in <b>C²</b> to see the routes it counts.</li>
+    <li><b>Free play</b> (after Level 8) gives you ready-made scenarios, up to 6 people, the full explanation and unlimited practice questions.</li>
+  </ol>
+  <p class="hint" style="margin:6px 0 0">Teachers: use <span class="kbd">Presentation mode</span> to enlarge the text on a projector. Every level can be opened directly from the level bar.</p>
+</details>
+
+<section class="card lesson" id="lesson">
+  <div class="levels" id="levels"></div>
+  <div class="eyebrow" id="lvMeta"></div>
+  <h2 id="lvTitle"></h2>
+  <div class="lgrid">
+    <div class="learn" id="lvLearn"></div>
+    <div class="taskbox">
+      <div><b>Your task:</b> <span id="lvTask"></span> <span class="goal" id="lvGoal"></span></div>
+      <div class="lq locked" id="lvQ"></div>
+      <div class="fb" id="lvFb"></div>
+      <div class="row btns" id="lvBtns">
+        <button class="primary" id="lvCheck">Check</button>
+        <button id="lvHint">Hint</button>
+        <button id="lvReset">Restart level</button>
+        <button id="lvNext" class="hidden">Next level →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="layout">
+  <!-- LEFT: network -->
+  <div class="sticky">
+    <section class="card">
+      <h2><span class="n">01</span>Build the network</h2>
+      <p class="hint">Click one person, then another, to add or remove a link. Or click a cell in matrix C.</p>
+      <div class="row" style="margin-top:0">
+        <select id="scenario" class="freeOnly" aria-label="Classroom scenario"></select>
+        <label class="switch freeOnly"><input type="checkbox" id="twoWay" checked> Two-way links</label>
+      </div>
+      <canvas id="net" aria-label="Communication network diagram"></canvas>
+      <div class="legend">
+        <span>→ one-way &nbsp; ↔ two-way</span>
+        <span><i style="background:var(--ink)"></i>selected</span>
+        <span id="pathLegend"></span>
+      </div>
+      <div class="status" id="status"></div>
+      <div class="row btns">
+        <span class="hint freeOnly" style="margin:0">People:</span>
+        <button id="minus" class="freeOnly">− remove</button><button id="plus" class="freeOnly">+ add</button>
+        <button id="clearAll">Clear all links</button>
+        <button id="presentBtn">Presentation mode</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- RIGHT: matrices -->
+  <div>
+    <section class="card">
+      <h2><span class="n">02</span>One-step links: matrix C</h2>
+      <p class="hint">Row = <b>sender</b>, column = <b>receiver</b>. 1 means a direct (one-step) link, 0 means none. Nobody sends to themselves, so the leading diagonal is all 0.</p>
+      <div id="Cwrap"></div>
+      <div class="work" id="Cread">Hover over a cell to read it as a sentence.</div>
+    </section>
+
+    <section class="card" id="secC2">
+      <h2><span class="n">03</span>Two-step links: C²</h2>
+      <p class="hint">C² = C × C counts the ways a message can go from the sender to the receiver <b>through exactly one other person</b>. Click any element to trace its routes.</p>
+      <div id="C2wrap"></div>
+      <div class="work" id="C2work">Click an element of C².</div>
+    </section>
+
+    <section class="card" id="secT">
+      <h2><span class="n">04</span>Total links: T = C + C²</h2>
+      <p class="hint">All the ways to get a message through in one <b>or</b> two steps. Row totals ignore the leading diagonal (those are redundant links back to yourself).</p>
+      <div id="Twrap"></div>
+      <h3>Who is best placed to spread a message?</h3>
+      <table class="rank" id="rank"></table>
+    </section>
+  </div>
+</div>
+
+<section class="card" id="secSpread">
+  <h2><span class="n">05</span>Spread a message, step by step</h2>
+  <p class="hint">Choose who starts. Predict who will know after each step, then reveal it on the network.</p>
+  <div class="row" style="margin-top:0">
+    <select id="starter" aria-label="Who starts the message"></select>
+    <div class="steps" id="stepBtns"></div>
+  </div>
+  <div class="work" id="spread"></div>
+</section>
+
+<section class="card explain freeOnly" id="secExplain">
+  <h2>Explain the network</h2>
+  <div id="explain"></div>
+  <div class="try" id="try"></div>
+</section>
+
+<section class="card freeOnly" id="secPractice">
+  <h2>Practice questions <span class="hint" id="score" style="font-family:'IBM Plex Sans'"></span></h2>
+  <p class="hint">Questions are written from the network on screen, so change the network and you get new ones. Work them out by hand first.</p>
+  <div class="q" id="quiz"></div>
+  <div class="row btns"><button class="primary" id="qCheck">Check</button><button id="qShow">Show working</button><button id="qNext">New question</button></div>
+</section>
+
+<section class="card">
+  <h2>Model assumptions &amp; teaching connections</h2>
+  <div class="notes">
+    <div>
+      <h3 class="eyebrow">How the model works</h3>
+      <ul>
+        <li>C is a square binary matrix (only 0s and 1s). Element c<sub>ij</sub> = 1 means person i can send a message directly to person j.</li>
+        <li>With “Two-way links” on, every link you draw goes both ways, so C is symmetric. Turn it off to model one-way communication (e.g. a manager who sends but doesn’t receive).</li>
+        <li>C² counts routes through exactly one other person. Its leading diagonal counts <b>redundant</b> links: a message that comes back to the sender.</li>
+        <li>T = C + C² counts all one- and two-step links. A 0 off the diagonal of T means that person can’t be reached in two steps or fewer.</li>
+        <li>Everything is calculated live in the browser. Names are made up.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="eyebrow">Teaching connections</h3>
+      <ul>
+        <li><span class="pill">Unit 1</span>Using a matrix to store and display information; order of a square matrix; reading element c<sub>ij</sub>.</li>
+        <li><span class="pill">Unit 1</span>Matrix multiplication and powers: C² as “row of C times column of C”.</li>
+        <li><span class="pill">Unit 1</span>Simple communication matrices and their application — one-step, two-step, redundant and total links.</li>
+        <li><span class="pill">Unit 4</span>Leads into communication and dominance matrices (ranking players in a round-robin tournament uses the same D + D² idea).</li>
+        <li><span class="pill">Networks</span>The same diagram is a directed graph; C is closely related to the adjacency matrix met in Unit 2.</li>
+      </ul>
+    </div>
+  </div>
+  <footer>Classroom demonstration. Suggested routine: students predict an element of C² from the diagram, check it by tracing routes, then confirm with row × column.</footer>
+</section>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const NAMES = ['Ali', 'Ben', 'Chloe', 'Dev', 'Emma', 'Finn'];
+const ini = k => NAMES[k][0];
+const sub = s => String(s).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[d]).join('');
+const PATHCOL = ['#c2410c', '#7c3aed', '#0e7490', '#b45309', '#be185d'];
+
+/* ---------- scenarios ---------- */
+const E = (n, pairs, two) => { const C = Array.from({ length: n }, () => Array(n).fill(0)); pairs.forEach(([a, b]) => { C[a][b] = 1; if (two) C[b][a] = 1; }); return C; };
+const SCEN = [
+  { name: 'Group chat (two-way)', two: true, C: E(5, [[0,1],[0,2],[1,3],[2,3],[3,4]], true),
+    ctx: 'Five friends message each other. Every link is two-way.' },
+  { name: 'Rumour chain (one-way)', two: false, C: E(5, [[0,1],[1,2],[2,3],[3,4],[1,4]], false),
+    ctx: 'A rumour is passed on but never sent back.' },
+  { name: 'Team captain', two: false, C: E(5, [[0,1],[0,2],[0,3],[0,4],[1,0],[2,0]], false),
+    ctx: 'Ali, the captain, messages everyone; only Ben and Chloe reply.' },
+  { name: 'Someone left out', two: true, C: E(5, [[0,1],[1,2],[2,3],[3,0]], true),
+    ctx: 'Four friends talk in a loop. Emma has no links at all.' },
+  { name: 'Café roster (6 staff)', two: true, C: E(6, [[0,1],[0,2],[1,3],[2,4],[3,5],[4,5],[1,2]], true),
+    ctx: 'Six café staff swap shifts by messaging each other.' },
+];
+SCEN.forEach((s, k) => $('scenario').add(new Option('Scenario: ' + s.name, k)));
+
+let C, n, pick = null, selC2 = null, hoverC = null, starter = 0, spreadStep = null, scenCtx = '';
+function loadScenario(k) { const s = SCEN[k]; C = s.C.map(r => r.slice()); n = C.length; $('twoWay').checked = s.two; scenCtx = s.ctx; reset(); }
+function reset() { pick = null; selC2 = null; hoverC = null; spreadStep = null; if (starter >= n) starter = 0; render(); newQuestion(); }
+$('scenario').oninput = e => { level = null; loadScenario(+e.target.value); };
+
+/* ---------- maths ---------- */
+const mm = (A, B) => A.map(r => B[0].map((_, j) => r.reduce((s, v, k) => s + v * B[k][j], 0)));
+const add = (A, B) => A.map((r, i) => r.map((v, j) => v + B[i][j]));
+const isSym = M => M.every((r, i) => r.every((v, j) => v === M[j][i]));
+const routes = (i, j) => { const out = []; for (let k = 0; k < n; k++) if (C[i][k] && C[k][j]) out.push(k); return out; };
+
+/* ---------- labelled matrix ---------- */
+function labelled(M, key, o = {}) {
+  const cw = 36, at = (r, c) => `style="grid-row:${r};grid-column:${c}"`;
+  let h = `<div class="lm" style="grid-template-columns:44px repeat(${n},${cw}px) ${o.sums ? '56px' : ''}">`;
+  h += `<span class="h rl" style="grid-row:1;grid-column:1;font-size:.66rem;line-height:1.1">from↓<br>to→</span>`;
+  for (let j = 0; j < n; j++) h += `<span class="h" ${at(1, j + 2)}>${ini(j)}</span>`;
+  if (o.sums) h += `<span class="h sum" ${at(1, n + 2)}>${o.sumLabel || 'Σ'}</span>`;
+  for (let i = 0; i < n; i++) {
+    h += `<span class="h rl" ${at(i + 2, 1)}>${ini(i)}</span>`;
+    for (let j = 0; j < n; j++) {
+      const cls = ['cell'];
+      if (o.click) cls.push('clk');
+      if (i === j) cls.push(o.diagBox && M[i][j] ? 'diagbox' : 'diag');
+      const hl = o.hl ? o.hl(i, j) : '';
+      if (hl) cls.push(hl); else if (o.ones && M[i][j] && i !== j) cls.push('one');
+      if (o.zeroOff && i !== j && M[i][j] === 0) cls.push('zero0');
+      h += `<span class="${cls.join(' ')}" ${at(i + 2, j + 2)} data-k="${key}" data-i="${i}" data-j="${j}">${M[i][j]}</span>`;
+    }
+    if (o.sums) h += `<span class="rs" ${at(i + 2, n + 2)}>${o.sums[i]}</span>`;
+  }
+  h += `<span class="br" style="grid-column:2 / span ${n};grid-row:2 / span ${n}"></span></div>`;
+  return h;
+}
+
+/* ---------- render ---------- */
+let C2, T;
+function render() {
+  C2 = mm(C, C); T = add(C, C2);
+  const outC = C.map(r => r.reduce((s, v) => s + v, 0));
+  const tot = T.map((r, i) => r.reduce((s, v, j) => s + (i === j ? 0 : v), 0));
+
+  // C
+  $('Cwrap').innerHTML = `<div class="mrow"><span class="mname">C =</span>${labelled(C, 'C', {
+    click: true, ones: true, sums: outC, sumLabel: 'sent',
+    hl: (i, j) => {
+      if (selC2) { const [a, b] = selC2, onR = i === a, onC = j === b; if (onR && onC && i === j) return ''; if (onR && C[i][j] && C[j][b]) return 'hb'; if (onC && C[i][j] && C[a][i]) return 'hb'; if (onR) return 'hr'; if (onC) return 'hc'; }
+      return '';
+    }
+  })}</div><div class="hint" style="margin:6px 0 0">Order ${n} × ${n}. “sent” = row sum = number of people each person can message directly.</div>`;
+
+  // C2
+  $('C2wrap').innerHTML = `<div class="mrow"><span class="mname">C² =</span>${labelled(C2, 'C2', { click: true, diagBox: true, hl: (i, j) => selC2 && selC2[0] === i && selC2[1] === j ? 'sel' : '' })}</div>
+    <div class="hint" style="margin:6px 0 0">Pink outline on the diagonal = redundant links (message returns to the sender).</div>`;
+
+  // T
+  $('Twrap').innerHTML = `<div class="mrow"><span class="mname">T =</span>${labelled(T, 'T', { sums: tot, sumLabel: 'total', zeroOff: true })}</div>
+    <div class="hint" style="margin:6px 0 0">Pink 0 = can’t be reached in one or two steps.</div>`;
+
+  // ranking
+  const order = [...Array(n).keys()].sort((a, b) => tot[b] - tot[a] || outC[b] - outC[a]);
+  const mx = Math.max(1, ...tot);
+  $('rank').innerHTML = `<tr><th>Person</th><th>Direct (row of C)</th><th>Two-step (row of C², no diagonal)</th><th>Total (row of T)</th></tr>` +
+    order.map(i => `<tr><td>${NAMES[i]}</td><td class="num">${outC[i]}</td><td class="num">${tot[i] - outC[i]}</td><td class="num">${tot[i]}<span class="bar" style="width:${tot[i] / mx * 80}px"></span></td></tr>`).join('');
+
+  renderC2work(); renderSpread(); renderExplain(); drawNet(); renderStatus(); updateLesson();
+}
+
+function renderC2work() {
+  if (!selC2) { $('C2work').innerHTML = 'Click an element of C² to see the routes and the row × column working.'; $('pathLegend').textContent = ''; return; }
+  const [i, j] = selC2, rs = routes(i, j);
+  const terms = [...Array(n).keys()].map(k => `${C[i][k]}×${C[k][j]}`).join(' + ');
+  let h = `<b>c²${sub(i + 1)}${sub(j + 1)} = ${C2[i][j]}</b> — two-step routes from ${NAMES[i]} to ${NAMES[j]}<br>`;
+  h += `<span class="r">row ${i + 1} of C (${NAMES[i]} sends)</span> × <span class="c">column ${j + 1} of C (${NAMES[j]} receives)</span>:<br>${terms} = ${C2[i][j]}<br>`;
+  h += rs.length ? rs.map((k, q) => `<span style="color:${PATHCOL[q % 5]}">● ${NAMES[i]} → ${NAMES[k]} → ${NAMES[j]}</span>`).join('<br>') : 'No two-step routes: no one is both a receiver of ' + NAMES[i] + ' and a sender to ' + NAMES[j] + '.';
+  if (i === j && C2[i][j]) h += `<br><span style="color:var(--muted);font-family:'IBM Plex Sans'">On the leading diagonal: these are <b>redundant</b> links — ${NAMES[i]} sends a message that comes straight back. Usually ignored when counting.</span>`;
+  else if (C[i][j] && C2[i][j]) h += `<br><span style="color:var(--muted);font-family:'IBM Plex Sans'">${NAMES[i]} can also reach ${NAMES[j]} directly (c${sub(i + 1)}${sub(j + 1)} = 1), so these two-step routes are back-up routes.</span>`;
+  $('C2work').innerHTML = h;
+  $('pathLegend').textContent = rs.length ? 'coloured arrows = two-step routes' : '';
+}
+
+function renderStatus() {
+  const s = $('status');
+  if (pick !== null) s.innerHTML = `<b>${NAMES[pick]}</b> selected — now click who ${NAMES[pick]} should be able to message (click ${NAMES[pick]} again to cancel).`;
+  else if (hoverC) { const [i, j] = hoverC; s.innerHTML = C[i][j] ? `${NAMES[i]} → ${NAMES[j]}: a direct link (c${sub(i + 1)}${sub(j + 1)} = 1).` : `${NAMES[i]} cannot message ${NAMES[j]} directly (c${sub(i + 1)}${sub(j + 1)} = 0).`; }
+  else if (level !== null) s.innerHTML = `<b>Level ${level + 1}:</b> ${LEVELS[level].task}`;
+  else s.innerHTML = `<b>${SCEN[+$('scenario').value].name}.</b> ${scenCtx}`;
+}
+
+/* ---------- spread ---------- */
+function reach(start) { const lvl = Array(n).fill(null); lvl[start] = 0; let frontier = [start]; for (let st = 1; st <= n; st++) { const nx = []; frontier.forEach(a => { for (let b = 0; b < n; b++) if (C[a][b] && lvl[b] === null) { lvl[b] = st; nx.push(b); } }); if (!nx.length) break; frontier = nx; } return lvl; }
+function renderSpread() {
+  $('starter').innerHTML = ''; for (let k = 0; k < n; k++) $('starter').add(new Option(`${NAMES[k]} starts the message`, k)); $('starter').value = starter;
+  const lvl = reach(starter), maxL = Math.max(...lvl.filter(v => v !== null));
+  $('stepBtns').innerHTML = [0, 1, 2, 3].map(s => `<button data-step="${s}" class="${spreadStep === s ? 'on' : ''}">${s === 0 ? 'Start' : 'After step ' + s}</button>`).join('') + `<button data-step="-1">Hide</button>`;
+  if (spreadStep === null) { $('spread').innerHTML = `Predict first: who will know after one step? After two? Then click the buttons.`; return; }
+  const know = s => [...Array(n).keys()].filter(k => lvl[k] !== null && lvl[k] <= s);
+  let h = '';
+  for (let s = 0; s <= spreadStep; s++) {
+    const newOnes = [...Array(n).keys()].filter(k => lvl[k] === s);
+    if (s === 0) h += `Start: only <b>${NAMES[starter]}</b> knows.<br>`;
+    else h += `After step ${s}: ${newOnes.length ? '<b>' + newOnes.map(k => NAMES[k]).join(', ') + '</b> now know' : 'nobody new'}${s === 1 ? ` — the 1s in ${NAMES[starter]}’s row of C` : s === 2 ? ` — the new non-zero entries in ${NAMES[starter]}’s row of C² (and so of T)` : ' — this would need C³'}.<br>`;
+  }
+  const unk = [...Array(n).keys()].filter(k => lvl[k] === null || lvl[k] > spreadStep);
+  h += unk.length ? `<span style="color:var(--warn)">Still don’t know: ${unk.map(k => NAMES[k]).join(', ')}</span>` : `<span style="color:var(--accent)">Everyone knows after ${maxL} step${maxL === 1 ? '' : 's'}.</span>`;
+  if (spreadStep >= 2) { const unreached = [...Array(n).keys()].filter(k => k !== starter && lvl[k] === null); if (unreached.length) h += `<br>${unreached.map(k => NAMES[k]).join(', ')} can never hear it from ${NAMES[starter]}, however many steps.`; }
+  $('spread').innerHTML = h;
+}
+$('starter').oninput = e => { starter = +e.target.value; render(); };
+$('stepBtns').addEventListener('click', e => { const b = e.target.closest('[data-step]'); if (!b) return; const s = +b.dataset.step; spreadStep = s < 0 ? null : s; if (spreadStep !== null) selC2 = null; render(); });
+
+/* ---------- explanation ---------- */
+function renderExplain() {
+  const sym = isSym(C), links = C.flat().reduce((s, v) => s + v, 0);
+  const outC = C.map(r => r.reduce((s, v) => s + v, 0)), inC = C[0].map((_, j) => C.reduce((s, r) => s + r[j], 0));
+  const tot = T.map((r, i) => r.reduce((s, v, j) => s + (i === j ? 0 : v), 0));
+  const ps = [];
+  ps.push(sym ? `C is <b>symmetric</b> (a mirror image across the leading diagonal), so every link is two-way. There are ${links} ones in C, which is ${links / 2} two-way link${links / 2 === 1 ? '' : 's'} — each one is counted twice.` : `C is <b>not symmetric</b>, so some links are one-way. There are ${links} one-way links (the number of 1s in C).`);
+  const bestS = outC.indexOf(Math.max(...outC)), bestR = inC.indexOf(Math.max(...inC));
+  ps.push(`Row sums tell you who can <b>send</b> to the most people directly (${NAMES[bestS]}: ${outC[bestS]}). Column sums tell you who can <b>receive</b> from the most people (${NAMES[bestR]}: ${inC[bestR]}).`);
+  const red = C2.reduce((s, r, i) => s + r[i], 0);
+  ps.push(`The leading diagonal of C² adds to ${red}: ${red ? 'these are redundant links where a message goes out and comes straight back.' : 'there are no redundant links (no two-way pairs).'}` + (sym ? ' In a two-way network, each person’s diagonal entry of C² equals their number of direct links.' : ''));
+  const isolated = [...Array(n).keys()].filter(i => outC[i] === 0 && inC[i] === 0);
+  if (isolated.length) ps.push(`${isolated.map(k => NAMES[k]).join(' and ')} ${isolated.length > 1 ? 'have' : 'has'} a row and a column of 0s: completely cut off.`);
+  const gaps = []; for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (i !== j && T[i][j] === 0) gaps.push(`${ini(i)}→${ini(j)}`);
+  ps.push(gaps.length ? `T has ${gaps.length} zero${gaps.length > 1 ? 's' : ''} off the diagonal (${gaps.slice(0, 6).join(', ')}${gaps.length > 6 ? ', …' : ''}), so not every message can get through in two steps.` : 'T has no zeros off the diagonal: everyone can get a message to everyone else in at most two steps.');
+  const best = tot.indexOf(Math.max(...tot));
+  ps.push(`Using T, <b>${NAMES[best]}</b> has the most one- and two-step links (${tot[best]}), so ${NAMES[best]} is the best person to start spreading news.`);
+  $('explain').innerHTML = ps.map(p => `<p>${p}</p>`).join('');
+  const tries = [
+    `Predict: if you remove the link between ${NAMES[best]} and one of their contacts, which row of C² changes? Try it, then check.`,
+    `Find a pair of people with a 0 in C but a non-zero entry in C². What does that mean in words?`,
+    `Turn off “Two-way links” and add a one-way link. Is C still symmetric? Is C²?`,
+    `Predict the leading diagonal of C² before you look. In a two-way network, why does it match the row sums of C?`,
+  ];
+  $('try').innerHTML = '<b>Try this:</b> ' + tries[(links + n) % tries.length];
+}
+
+/* ---------- network drawing ---------- */
+let pos = [], nodeR = 24;
+function setupCv(cv) { const dpr = window.devicePixelRatio || 1, r = cv.getBoundingClientRect(); cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return { ctx, w: r.width, h: r.height }; }
+function arrowHead(ctx, x, y, a, size = 11) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - size * Math.cos(a - .42), y - size * Math.sin(a - .42)); ctx.lineTo(x - size * Math.cos(a + .42), y - size * Math.sin(a + .42)); ctx.closePath(); ctx.fill(); }
+function drawNet() {
+  const cv = $('net'), { ctx, w, h } = setupCv(cv), R = Math.min(w, h) * 0.34, cx = w / 2, cy = h / 2 + 8;
+  nodeR = Math.max(20, Math.min(28, w / 18));
+  const th0 = n === 2 ? -Math.PI / 2 : n === 4 ? -Math.PI / 4 : 0; pos = [...Array(n).keys()].map(k => [cx + R * Math.sin(th0 + k * 2 * Math.PI / n), cy - R * Math.cos(th0 + k * 2 * Math.PI / n)]);
+  ctx.clearRect(0, 0, w, h);
+  const seg = (i, j, off = 0) => { const [x1, y1] = pos[i], [x2, y2] = pos[j], a = Math.atan2(y2 - y1, x2 - x1), px = -Math.sin(a) * off, py = Math.cos(a) * off; return { sx: x1 + Math.cos(a) * nodeR + px, sy: y1 + Math.sin(a) * nodeR + py, ex: x2 - Math.cos(a) * (nodeR + 2) + px, ey: y2 - Math.sin(a) * (nodeR + 2) + py, a }; };
+
+  // base edges
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    if (i === j || !C[i][j]) continue;
+    const two = C[j][i]; if (two && j < i) continue;
+    const s = seg(i, j), hov = hoverC && ((hoverC[0] === i && hoverC[1] === j) || (two && hoverC[0] === j && hoverC[1] === i));
+    const dim = selC2 && routes(selC2[0], selC2[1]).length;
+    ctx.strokeStyle = hov ? '#14795a' : dim ? '#d6d1c6' : '#8e939b'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = hov ? 3.5 : 2;
+    ctx.beginPath(); ctx.moveTo(s.sx, s.sy); ctx.lineTo(s.ex, s.ey); ctx.stroke();
+    arrowHead(ctx, s.ex, s.ey, s.a); if (two) arrowHead(ctx, s.sx, s.sy, s.a + Math.PI);
+  }
+  // highlighted two-step routes
+  if (selC2) {
+    const [a, b] = selC2, rs = routes(a, b);
+    rs.forEach((k, q) => {
+      const col = PATHCOL[q % 5], off = (q - (rs.length - 1) / 2) * 6;
+      [[a, k], [k, b]].forEach(([u, v], leg) => {
+        const s = seg(u, v, off); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 3.4; ctx.setLineDash(leg ? [] : []);
+        ctx.beginPath(); ctx.moveTo(s.sx, s.sy); ctx.lineTo(s.ex, s.ey); ctx.stroke(); arrowHead(ctx, s.ex, s.ey, s.a, 13);
+        ctx.font = '600 11px "IBM Plex Mono", monospace'; ctx.fillText(leg ? '2' : '1', (s.sx + s.ex) / 2 + 6, (s.sy + s.ey) / 2 - 6);
+      });
+    });
+  }
+  // nodes
+  const lvl = spreadStep !== null ? reach(starter) : null;
+  pos.forEach(([x, y], k) => {
+    let fill = '#fff', txt = '#1c1e23';
+    if (lvl) { const L = lvl[k]; if (L !== null && L <= spreadStep) { fill = L === 0 ? '#1c1e23' : L === 1 ? '#14795a' : L === 2 ? '#7cc2a7' : '#c7e6d9'; txt = L <= 1 ? '#fff' : '#1c1e23'; } }
+    else if (pick === k || (selC2 && (selC2[0] === k || selC2[1] === k))) { fill = '#1c1e23'; txt = '#fff'; }
+    ctx.fillStyle = fill; ctx.strokeStyle = '#1c1e23'; ctx.lineWidth = pick === k ? 4 : 2;
+    ctx.beginPath(); ctx.arc(x, y, nodeR, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = txt; ctx.font = `600 ${Math.round(nodeR * .7)}px "IBM Plex Sans", sans-serif`; ctx.textAlign = 'center'; ctx.fillText(ini(k), x, y + nodeR * .25);
+    ctx.fillStyle = '#6a6e77'; ctx.font = '12px "IBM Plex Sans", sans-serif';
+    const ly = y > cy + 5 ? y + nodeR + 16 : y - nodeR - 8; ctx.fillText(NAMES[k], x, ly);
+    if (lvl && lvl[k] !== null && lvl[k] <= spreadStep && lvl[k] > 0) { ctx.fillStyle = '#14795a'; ctx.font = '600 11px "IBM Plex Mono", monospace'; ctx.fillText('step ' + lvl[k], x, y > cy + 5 ? ly + 14 : ly - 14); }
+    ctx.textAlign = 'left';
+  });
+}
+
+/* ---------- interactions ---------- */
+function toggle(i, j) { if (i === j) return; const v = 1 - C[i][j]; C[i][j] = v; if ($('twoWay').checked) C[j][i] = v; selC2 = null; render(); newQuestion(); }
+$('net').addEventListener('click', e => {
+  const r = $('net').getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const k = pos.findIndex(([px, py]) => Math.hypot(px - x, py - y) < nodeR + 6);
+  if (k < 0) { pick = null; selC2 = null; render(); return; }
+  if (pick === null) { pick = k; selC2 = null; spreadStep = null; render(); }
+  else if (pick === k) { pick = null; render(); }
+  else { const a = pick; pick = null; toggle(a, k); }
+});
+document.addEventListener('click', e => {
+  const t = e.target.closest('.cell[data-k]'); if (!t) return;
+  const i = +t.dataset.i, j = +t.dataset.j;
+  if (t.dataset.k === 'C') toggle(i, j);
+  else if (t.dataset.k === 'C2') { selC2 = selC2 && selC2[0] === i && selC2[1] === j ? null : [i, j]; spreadStep = null; pick = null; render(); }
+});
+document.addEventListener('mouseover', e => {
+  const t = e.target.closest('.cell[data-k="C"]');
+  const next = t ? [+t.dataset.i, +t.dataset.j] : null;
+  if (JSON.stringify(next) === JSON.stringify(hoverC)) return;
+  hoverC = next && next[0] !== next[1] ? next : null;
+  if (t) { const [i, j] = next; $('Cread').innerHTML = i === j ? `c${sub(i + 1)}${sub(j + 1)} is on the leading diagonal: a person doesn’t send messages to themselves, so it is always 0.` : `c${sub(i + 1)}${sub(j + 1)} = ${C[i][j]} (row ${i + 1}, column ${j + 1}): ${NAMES[i]} ${C[i][j] ? 'can' : 'cannot'} send a message directly to ${NAMES[j]}.` + (C[i][j] !== C[j][i] ? ` But c${sub(j + 1)}${sub(i + 1)} = ${C[j][i]}, so it is one-way.` : ''); }
+  drawNet(); renderStatus();
+});
+$('twoWay').oninput = () => { if ($('twoWay').checked && !isSym(C)) { for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (C[i][j]) C[j][i] = 1; render(); newQuestion(); } };
+$('plus').onclick = () => { if (n >= 6) return; C.forEach(r => r.push(0)); C.push(Array(n + 1).fill(0)); n++; reset(); };
+$('minus').onclick = () => { if (n <= 3) return; C.pop(); C.forEach(r => r.pop()); n--; reset(); };
+$('clearAll').onclick = () => { C = C.map(r => r.map(() => 0)); reset(); };
+$('presentBtn').onclick = () => { document.body.classList.toggle('present'); $('presentBtn').classList.toggle('on'); requestAnimationFrame(render); };
+
+/* ---------- practice questions ---------- */
+let Q = null, right = 0, total = 0;
+const rint = m => Math.floor(Math.random() * m);
+function newQuestion() {
+  const pairs = []; for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (i !== j) pairs.push([i, j]);
+  const kinds = ['meaning', 'count2', 'via', 'total', 'redundant', 'reachable'];
+  const kind = kinds[rint(kinds.length)];
+  let [i, j] = pairs[rint(pairs.length)];
+  const good = pairs.filter(([a, b]) => C2[a][b] > 0); if ((kind === 'count2' || kind === 'via') && good.length && Math.random() < .75) [i, j] = good[rint(good.length)];
+  const tot = T.map((r, a) => r.reduce((s, v, b) => s + (a === b ? 0 : v), 0));
+  if (kind === 'meaning') {
+    const v = C[i][j], opts = [
+      `${NAMES[i]} can send a message directly to ${NAMES[j]}.`,
+      `${NAMES[j]} can send a message directly to ${NAMES[i]}.`,
+      `${NAMES[i]} cannot send a message directly to ${NAMES[j]}.`,
+      `${NAMES[i]} can reach ${NAMES[j]} in two steps.`];
+    const correct = v ? 0 : 2;
+    const order = [0, 1, 2, 3].sort(() => Math.random() - .5);
+    Q = { kind, type: 'mc', prompt: `In matrix C, element c${sub(i + 1)}${sub(j + 1)} = ${v}. What does this tell you?`, opts: order.map(k => opts[k]), ans: order.indexOf(correct),
+      work: `c${sub(i + 1)}${sub(j + 1)} is in row ${i + 1} (the sender, ${NAMES[i]}) and column ${j + 1} (the receiver, ${NAMES[j]}). ${v ? '1 means there is' : '0 means there is no'} direct link. Remember: row = from, column = to.`, hl: null };
+  } else if (kind === 'count2') {
+    Q = { kind, type: 'num', prompt: `How many two-step communication links are there from ${NAMES[i]} to ${NAMES[j]}?`, ans: C2[i][j], sel: [i, j],
+      work: `Look up c²${sub(i + 1)}${sub(j + 1)}: row ${i + 1} of C × column ${j + 1} of C = ${[...Array(n).keys()].map(k => `${C[i][k]}×${C[k][j]}`).join(' + ')} = ${C2[i][j]}.` + (routes(i, j).length ? ` The routes are ${routes(i, j).map(k => `${ini(i)}→${ini(k)}→${ini(j)}`).join(', ')}.` : '') };
+  } else if (kind === 'via') {
+    const rs = routes(i, j);
+    Q = { kind, type: 'num', prompt: `${NAMES[i]} wants to send a message to ${NAMES[j]} through exactly one other person. How many different people could pass it on?`, ans: rs.length, sel: [i, j],
+      work: rs.length ? `The go-betweens are the people k with c${sub(i + 1)}k = 1 and c k${sub(j + 1)} = 1: ${rs.map(k => NAMES[k]).join(', ')}. That is the element c²${sub(i + 1)}${sub(j + 1)} = ${C2[i][j]}.` : `No one receives from ${NAMES[i]} and also sends to ${NAMES[j]}, so c²${sub(i + 1)}${sub(j + 1)} = 0.` };
+  } else if (kind === 'total') {
+    Q = { kind, type: 'num', prompt: `Using T = C + C², what is the total number of one-step and two-step links from ${NAMES[i]} to ${NAMES[j]}?`, ans: T[i][j], sel: [i, j],
+      work: `t${sub(i + 1)}${sub(j + 1)} = c${sub(i + 1)}${sub(j + 1)} + c²${sub(i + 1)}${sub(j + 1)} = ${C[i][j]} + ${C2[i][j]} = ${T[i][j]}.` };
+  } else if (kind === 'redundant') {
+    Q = { kind, type: 'num', prompt: `How many redundant two-step links does ${NAMES[i]} have (messages that come straight back to ${NAMES[i]})?`, ans: C2[i][i], sel: [i, i],
+      work: `Redundant links are on the leading diagonal of C². c²${sub(i + 1)}${sub(i + 1)} = ${C2[i][i]}${C2[i][i] ? ': ' + routes(i, i).map(k => `${ini(i)}→${ini(k)}→${ini(i)}`).join(', ') : ''}.` };
+  } else {
+    const cnt = T[i].filter((v, b) => b !== i && v > 0).length;
+    Q = { kind, type: 'num', prompt: `How many <b>different people</b> can ${NAMES[i]} get a message to in one or two steps?`, ans: cnt, sel: null,
+      work: `Count the non-zero elements in row ${i + 1} of T, ignoring the leading diagonal: ${T[i].map((v, b) => b === i ? '–' : v).join(', ')} → ${cnt} people. (Not the row total, ${tot[i]}, which counts routes, not people.)` };
+  }
+  drawQuiz();
+}
+function drawQuiz() {
+  let h = `<div class="prompt">${Q.prompt}</div>`;
+  if (Q.type === 'mc') h += `<div class="opts">${Q.opts.map((o, k) => `<label><input type="radio" name="qo" value="${k}"> ${o}</label>`).join('')}</div>`;
+  else h += `<div class="row">Answer: <input class="num" id="qAns" type="number" min="0"></div>`;
+  h += `<div class="fb" id="qFb"></div>`;
+  $('quiz').innerHTML = h;
+}
+$('qCheck').onclick = () => {
+  let v; if (Q.type === 'mc') { const r = document.querySelector('input[name=qo]:checked'); if (!r) return; v = +r.value; } else { v = parseInt($('qAns').value); if (isNaN(v)) return; }
+  const ok = v === Q.ans; total++; if (ok) right++; $('score').textContent = `— score ${right}/${total}`;
+  $('qFb').innerHTML = (ok ? '<span class="ok">Correct!</span> ' : `<span class="bad">Not quite.</span> The answer is ${Q.type === 'mc' ? '“' + Q.opts[Q.ans] + '”' : Q.ans}. `) + Q.work;
+  if (Q.sel) { selC2 = Q.sel; spreadStep = null; render(); }
+};
+$('qShow').onclick = () => { $('qFb').innerHTML = Q.work; if (Q.sel) { selC2 = Q.sel; spreadStep = null; render(); } };
+$('qNext').onclick = newQuestion;
+
+
+/* =================== LEVELS =================== */
+const NM = k => NAMES[k];
+const LEVELS = [
+  { title: 'Two people, one arrow', n: 2, C: [[0,0],[0,0]], two: false, show: [],
+    learn: `<p>Each circle is a person. An <b>arrow</b> from Ali to Ben means Ali can send a message <b>directly</b> to Ben.</p><p>We record this in a <b>communication matrix C</b>. The <b>row</b> is who <b>sends</b>, the <b>column</b> is who <b>receives</b>. Write 1 if there is a direct link and 0 if there isn’t.</p>`,
+    task: 'Click <b>Ali</b>, then click <b>Ben</b>, to draw the arrow Ali → Ben. Watch matrix C.',
+    hint: 'Click the A circle first (it turns black), then the B circle.',
+    goal: c => c.C[0][1] === 1 && c.C[1][0] === 0,
+    q: { type: 'mc', prompt: () => 'Which element of C changed from 0 to 1?', opts: () => ['c₁₂ (row 1, column 2)', 'c₂₁ (row 2, column 1)', 'c₁₁ (row 1, column 1)', 'c₂₂ (row 2, column 2)'], ans: () => 0,
+      why: () => 'Ali is person 1 and sends, so it’s row 1. Ben is person 2 and receives, so it’s column 2: c₁₂ = 1.' } },
+  { title: 'A reply: two-way links', n: 2, C: [[0,1],[0,0]], two: false, show: [],
+    learn: `<p>Right now Ali can message Ben, but Ben can’t reply. A link that works both ways is really <b>two</b> links, so it puts <b>two</b> 1s in C.</p><p>When every link is two-way, C is <b>symmetric</b>: it is a mirror image across the <b>leading diagonal</b> (top-left to bottom-right).</p>`,
+    task: 'Let Ben reply: click <b>Ben</b>, then <b>Ali</b>.',
+    hint: 'Click B first this time, then A.',
+    goal: c => c.C[0][1] === 1 && c.C[1][0] === 1,
+    q: { type: 'mc', prompt: () => 'Why is the leading diagonal of C always 0?', opts: () => ['Nobody sends a message to themselves.', 'Those people are not connected to anyone.', 'Two-way links cancel out.', 'It is a rule for all square matrices.'], ans: () => 0,
+      why: () => 'c₁₁ would mean “Ali messages Ali”. We don’t count that, so every leading-diagonal element is 0.' } },
+  { title: 'Three people: rows and columns', n: 3, C: [[0,1,1],[0,0,0],[0,1,0]], two: false, show: [],
+    learn: `<p>With 3 people, C is a 3 × 3 matrix. The green number beside each row (“sent”) is the <b>row sum</b>: how many people that person can message directly.</p><p>A <b>column sum</b> tells you how many people can message that person.</p>`,
+    task: 'Make <b>Chloe</b> able to message <b>Ali</b>.',
+    hint: 'Click C (Chloe), then A (Ali). Row 3, column 1 of C should become 1.',
+    goal: c => c.C[2][0] === 1,
+    q: { type: 'num', prompt: c => 'How many people can Chloe message directly now?', ans: c => c.C[2].reduce((s, v) => s + v, 0),
+      why: c => `Add up row 3 of C (Chloe’s row): ${c.C[2].join(' + ')} = ${c.C[2].reduce((s, v) => s + v, 0)}.` } },
+  { title: 'Two steps: passing a message on', n: 3, C: [[0,1,0],[0,0,1],[0,0,0]], two: false, show: ['C2'],
+    learn: `<p>Ali can’t message Chloe directly (c₁₃ = 0). But Ali can tell Ben, and Ben can tell Chloe: Ali → Ben → Chloe. That is a <b>two-step link</b>.</p><p>The matrix <b>C² = C × C</b> counts the two-step links between every pair of people. It has now appeared on the right.</p>`,
+    task: 'In C², click the element in <b>row 1, column 3</b> (Ali to Chloe) to see its route.',
+    hint: 'Scroll to matrix C² on the right and click the number in row A, column C.',
+    goal: c => c.sel && c.sel[0] === 0 && c.sel[1] === 2,
+    q: { type: 'num', prompt: () => 'What is the value of c²₁₃?', ans: c => c.C2[0][2], why: c => `There is ${c.C2[0][2]} route from Ali to Chloe through one other person: Ali → Ben → Chloe.` } },
+  { title: 'Redundant links', n: 3, C: [[0,1,0],[1,0,1],[0,1,0]], two: true, show: ['C2'],
+    learn: `<p>When links are two-way, a message can go out and come straight back: Ben → Ali → Ben. That still counts as a two-step route, so it shows up on the <b>leading diagonal of C²</b>.</p><p>These are called <b>redundant links</b> — they don’t help the message reach anyone new, so we usually ignore them.</p>`,
+    task: 'In C², click Ben’s element on the leading diagonal (row 2, column 2).',
+    hint: 'It is the middle number of C².',
+    goal: c => c.sel && c.sel[0] === 1 && c.sel[1] === 1,
+    q: { type: 'num', prompt: () => 'How many redundant links does Ben have?', ans: c => c.C2[1][1], why: c => `c²₂₂ = ${c.C2[1][1]}: Ben → Ali → Ben and Ben → Chloe → Ben.` } },
+  { title: 'Calculating C² by hand: row × column', n: 4, C: [[0,1,0,1],[1,0,1,0],[0,1,0,1],[1,0,1,0]], two: true, show: ['C2'],
+    learn: `<p>To find an element of C² by hand, take a <b>row</b> of C (the sender) and a <b>column</b> of C (the receiver). Multiply matching pairs and add.</p><p>Each pair that gives 1 × 1 is one route: “sender → that person → receiver”.</p>`,
+    task: 'Predict how many two-step routes go from Ali to Chloe. Then click c²₁₃ in C² to check.',
+    hint: 'Row 1 of C is Ali’s row. Column 3 of C is Chloe’s column. Look for positions where both are 1.',
+    goal: c => c.sel && c.sel[0] === 0 && c.sel[1] === 2,
+    q: { type: 'num', prompt: () => 'c²₁₃ = ?', ans: c => c.C2[0][2], why: c => `Row 1 × column 3: ${[0,1,2,3].map(k => `${c.C[0][k]}×${c.C[k][2]}`).join(' + ')} = ${c.C2[0][2]}. The routes are Ali → Ben → Chloe and Ali → Dev → Chloe.` } },
+  { title: 'Total links: T = C + C²', n: 4, C: [[0,1,0,0],[0,0,1,0],[0,0,0,1],[0,0,0,0]], two: false, show: ['C2', 'T'],
+    learn: `<p>Adding C and C² gives <b>T = C + C²</b>: the number of ways to get a message through in <b>one or two steps</b>.</p><p>A 0 in T (off the leading diagonal) means that person can’t be reached in two steps or fewer. In matrix T these zeros are shown in pink.</p>`,
+    task: 'Ali can’t reach Dev in two steps yet. Add <b>one</b> arrow so that he can.',
+    hint: 'Either give Ali a direct link to Dev, or link Ali to Chloe (Ali → Chloe → Dev).',
+    goal: c => c.T[0][3] > 0,
+    q: { type: 'num', prompt: () => 'Now, how many different people can Ali reach in one or two steps?', ans: c => c.T[0].filter((v, j) => j && v > 0).length,
+      why: c => `Count the non-zero elements in row 1 of T, ignoring the leading diagonal: ${c.T[0].map((v, j) => j ? v : '–').join(', ')}.` } },
+  { title: 'Exam style: who spreads the news best?', n: 5, C: null, two: true, show: ['C2', 'T', 'spread'],
+    learn: `<p>This is the full picture, like an exam question. The row totals of T (ignoring the leading diagonal) show who has the most one- and two-step links, so who is best placed to spread a message.</p><p>The <b>Spread a message</b> section below shows the message moving one step at a time.</p>`,
+    task: 'In “Spread a message”, choose <b>Dev</b> to start, then click <b>After step 2</b>.',
+    hint: 'Scroll down to section 05. Pick “Dev starts the message”, then press “After step 2”.',
+    goal: c => c.starter === 3 && c.step !== null && c.step >= 2,
+    q: { type: 'mc', prompt: () => 'Using T, who has the largest total of one- and two-step links?', opts: c => NAMES.slice(0, c.n), ans: c => { const t = c.T.map((r, i) => r.reduce((s, v, j) => s + (i === j ? 0 : v), 0)), m = Math.max(...t); return t.map((v, i) => v === m ? i : -1).filter(i => i >= 0); },
+      why: c => 'Row totals of T (no diagonal): ' + c.T.map((r, i) => `${NAMES[i]} ${r.reduce((s, v, j) => s + (i === j ? 0 : v), 0)}`).join(', ') + '.' } },
+];
+LEVELS[7].C = SCEN[0].C;
+let level = 0, done = new Set(), lvAnswered = false, lvShownQ = false;
+try { JSON.parse(localStorage.getItem('cml-done') || '[]').forEach(k => done.add(k)); } catch (e) {}
+const ctxNow = () => ({ C, C2, T, n, sel: selC2, starter, step: spreadStep });
+
+function buildLevelBar() {
+  $('levels').innerHTML = '<span class="lbl">Level</span>' + LEVELS.map((L, k) => `<button data-lv="${k}" class="${level === k ? 'cur' : ''} ${done.has(k) ? 'done' : ''}" title="${L.title}">${k + 1}</button>`).join('') +
+    `<button data-lv="free" class="${level === null ? 'cur' : ''}" style="font-family:inherit">Free play</button>`;
+}
+$('levels').addEventListener('click', e => { const b = e.target.closest('[data-lv]'); if (!b) return; b.dataset.lv === 'free' ? startFree() : startLevel(+b.dataset.lv); });
+
+function setVisible(show, free) {
+  document.querySelectorAll('.freeOnly').forEach(el => el.classList.toggle('hidden', !free));
+  $('secC2').classList.toggle('hidden', !free && !show.includes('C2'));
+  $('secT').classList.toggle('hidden', !free && !show.includes('T'));
+  $('secSpread').classList.toggle('hidden', !free && !show.includes('spread'));
+}
+function startLevel(k) {
+  level = k; const L = LEVELS[k];
+  C = L.C.map(r => r.slice()); n = L.n; $('twoWay').checked = L.two;
+  lvAnswered = false; lvShownQ = false; starter = 0;
+  setVisible(L.show, false); buildLevelBar();
+  $('lvMeta').textContent = `Level ${k + 1} of ${LEVELS.length} · ${n} people`;
+  $('lvTitle').textContent = L.title; $('lvLearn').innerHTML = L.learn; $('lvTask').innerHTML = L.task;
+  $('lvFb').innerHTML = ''; $('lvNext').classList.add('hidden'); $('lvBtns').classList.remove('hidden');
+  ['lvCheck', 'lvHint', 'lvReset'].forEach(id => $(id).classList.remove('hidden'));
+  pick = null; selC2 = null; hoverC = null; spreadStep = null;
+  render();
+}
+function startFree() {
+  level = null; setVisible([], true); buildLevelBar();
+  $('lvMeta').textContent = 'Free play'; $('lvTitle').textContent = 'Build any network you like';
+  $('lvLearn').innerHTML = '<p>Choose a ready-made scenario from the menu on the network, add or remove people (3 to 6), and switch two-way links on or off.</p><p>Everything from Levels 1–8 is switched on: C, C², T, the message spreader, a written explanation of the network and unlimited practice questions at the bottom.</p>';
+  $('lvTask').innerHTML = 'Try the “Practice questions” at the bottom of the page.'; $('lvGoal').className = 'hidden';
+  $('lvQ').innerHTML = ''; $('lvFb').innerHTML = ''; $('lvBtns').classList.add('hidden');
+  loadScenario(+$('scenario').value);
+}
+function updateLesson() {
+  if (level === null) return;
+  const L = LEVELS[level], c = ctxNow(), met = L.goal(c);
+  $('lvGoal').className = 'goal' + (met ? ' met' : ''); $('lvGoal').textContent = met ? '✓ done' : '○ not yet';
+  if (met && !lvShownQ) { lvShownQ = true; drawLevelQ(); }
+  if (!lvShownQ) $('lvQ').innerHTML = '<span class="hint">The question appears when the task is done.</span>';
+  $('lvQ').classList.toggle('locked', !lvShownQ);
+}
+function drawLevelQ() {
+  const q = LEVELS[level].q, c = ctxNow();
+  let h = `<div style="margin-bottom:6px"><b>Question:</b> ${q.prompt(c)}</div>`;
+  if (q.type === 'mc') h += `<div class="opts">${q.opts(c).map((o, k) => `<label><input type="radio" name="lvo" value="${k}"> ${o}</label>`).join('')}</div>`;
+  else h += `<div class="row">Answer: <input class="num" id="lvAns" type="number" min="0"></div>`;
+  $('lvQ').innerHTML = h;
+}
+$('lvCheck').onclick = () => {
+  if (!lvShownQ) { $('lvFb').innerHTML = '<span class="bad">Finish the task first.</span> ' + LEVELS[level].hint; return; }
+  const q = LEVELS[level].q, c = ctxNow(); let v;
+  if (q.type === 'mc') { const r = document.querySelector('input[name=lvo]:checked'); if (!r) return; v = +r.value; } else { v = parseInt($('lvAns').value); if (isNaN(v)) return; }
+  const a = q.ans(c), ok = Array.isArray(a) ? a.includes(v) : v === a;
+  $('lvFb').innerHTML = (ok ? '<span class="ok">Correct!</span> ' : '<span class="bad">Not quite — try again.</span> ') + (ok ? q.why(c) : '');
+  if (ok) { done.add(level); try { localStorage.setItem('cml-done', JSON.stringify([...done])); } catch (e) {} buildLevelBar(); $('lvNext').classList.remove('hidden'); $('lvNext').textContent = level === LEVELS.length - 1 ? 'Go to Free play →' : 'Next level →'; }
+};
+$('lvHint').onclick = () => { $('lvFb').innerHTML = '<b>Hint:</b> ' + (lvShownQ ? 'Use the matrices on the right — they always match the network.' : LEVELS[level].hint); };
+$('lvReset').onclick = () => startLevel(level);
+$('lvNext').onclick = () => { level === LEVELS.length - 1 ? startFree() : startLevel(level + 1); $('lesson').scrollIntoView({ behavior: 'smooth' }); };
+
+/* ---------- init ---------- */
+startLevel(0);
+window.addEventListener('resize', drawNet);
+if (document.fonts) document.fonts.ready.then(drawNet);
+})();
+</script>
+</body>
+</html>
